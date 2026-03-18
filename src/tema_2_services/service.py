@@ -40,14 +40,26 @@ class RAGAssistant:
         os.makedirs(DATA_DIR, exist_ok=True)
         self.embedder = None
 
-        # ToDo: Adaugat o propozitie de referinta mai specifica pentru domeniul dvs
+        # Propozitie de referinta pentru filtrarea intrebarilor din domeniu.
         self.relevance = self._embed_texts(
-            "Aceasta este o intrebare relevanta despre ...",
+            (
+                "Aceasta este o intrebare relevanta despre automatizarea "
+                "firmelor mici cu AI, chatboti, procese interne, documente, "
+                "relatia cu clientii si eficientizare operationala."
+            ),
         )[0]
 
-        # ToDo: Definiti un prompt de sistem mai detaliat pentru a ghida raspunsurile LLM-ului in directia dorita
+        # Prompt de sistem pentru un asistent specializat pe automatizari AI.
         self.system_prompt = (
-            "..."
+            "Esti un consultant AI specializat in automatizarea firmelor mici "
+            "si IMM-urilor. Raspunzi clar, practic si structurat in limba "
+            "romana. Foloseste exclusiv contextul furnizat daca acesta "
+            "contine informatia necesara. Daca informatia lipseste sau este "
+            "insuficienta, spune explicit acest lucru si formuleaza un "
+            "raspuns prudent bazat doar pe ce reiese din context. Nu inventa "
+            "date, preturi, functionalitati sau surse. Cand este util, "
+            "structureaza raspunsul in pasi concreti, beneficii, riscuri si "
+            "recomandari de implementare pentru o firma mica."
         )
 
 
@@ -88,13 +100,24 @@ class RAGAssistant:
 
         system_msg = self.system_prompt
 
-        # ToDo: Ajustati acest prompt pentru a se potrivi mai bine cu domeniul dvs si pentru a ghida LLM-ul sa ofere raspunsuri mai relevante si structurate.
         messages = [
             {"role": "system", "content": system_msg},
             {
                 "role": "user",
                 "content": (
-                    "..."
+                    "Raspunde la intrebarea utilizatorului folosind contextul "
+                    "de mai jos.\n\n"
+                    "Context:\n"
+                    f"{context or 'Nu exista context disponibil.'}\n\n"
+                    "Cerinte pentru raspuns:\n"
+                    "- raspunde in limba romana;\n"
+                    "- concentreaza-te pe automatizarea firmelor mici cu AI;\n"
+                    "- daca contextul nu acopera complet intrebarea, spune ce "
+                    "lipseste;\n"
+                    "- ofera recomandari practice, nu raspunsuri vagi;\n"
+                    "- daca se potriveste, foloseste o structura scurta cu "
+                    "bullet-uri.\n\n"
+                    f"Intrebarea utilizatorului: {user_input}"
                 ),
             },
         ]
@@ -215,26 +238,30 @@ class RAGAssistant:
         return [chunks[i] for i in indices[0] if i < len(chunks)]
 
     def calculate_similarity(self, text: str) -> float:
-        # ToDo: Ajustati aceasta propozitie de referinta pentru a se potrivi mai bine cu domeniul dvs, astfel incat sa reflecte mai precis ce inseamna "relevant" in contextul aplicatiei dvs.
-        """Returneaza similaritatea cu o propozitie de referinta despre ... ."""
+        """Returneaza similaritatea cu domeniul automatizarii firmelor mici."""
         embedding = self._embed_texts(text.strip())[0]
         return self._cosine_similarity(embedding, self.relevance)
 
     def is_relevant(self, user_input: str) -> bool:
-        # ToDo: Ajustati pragul de similaritate pentru a se potrivi mai bine cu domeniul dvs, astfel incat sa echilibreze corect intre a permite intrebari relevante si a respinge cele irelevante.
-        """Verifica daca intrarea utilizatorului e despre ...."""
-        return self.calculate_similarity(user_input) >= 0.5
+        """Verifica daca intrebarea este despre automatizari AI pentru firme."""
+        return self.calculate_similarity(user_input) >= 0.42
 
     def assistant_response(self, user_message: str) -> str:
         """Directioneaza mesajul utilizatorului catre calea potrivita."""
         if not user_message:
-            # ToDo: Ajustati acest mesaj pentru a fi mai specific pentru domeniul dvs, astfel incat sa ghideze utilizatorii sa puna intrebari relevante si sa ofere un exemplu concret.
-            return "Te rog scrie un mesaj despre ... ."
+            return (
+                "Te rog scrie o intrebare despre automatizarea firmelor mici "
+                "cu AI. Exemplu: Ce procese dintr-un restaurant pot fi "
+                "automatizate cu un chatbot si fluxuri simple?"
+            )
 
         if not self.is_relevant(user_message):
-            # ToDo: Ajustati acest mesaj pentru a fi mai specific pentru domeniul dvs, astfel incat sa ghideze utilizatorii sa puna intrebari relevante si sa ofere un exemplu concret.
             return (
-                "..."
+                "Pot raspunde doar la intrebari despre automatizarea firmelor "
+                "mici cu AI, procese operationale, chatboti, documente sau "
+                "relatia cu clientii. Exemplu relevant: Cum pot automatiza "
+                "preluarea comenzilor si raspunsurile catre clienti pentru o "
+                "cafenea mica?"
             )
 
         chunks = self._load_documents_from_web()
@@ -244,6 +271,13 @@ class RAGAssistant:
 
 if __name__ == "__main__":
     assistant = RAGAssistant()
-    # ToDo: Testati cu intrebari relevante pentru domeniul dvs, precum si cu intrebari irelevante pentru a va asigura ca logica de filtrare functioneaza corect.
-    print(assistant.assistant_response("..."))  # test relevant
-    print(assistant.assistant_response("..."))  # test irelevant
+    print(
+        assistant.assistant_response(
+            "Ce procese dintr-un salon mic pot fi automatizate cu AI?"
+        )
+    )  # test relevant
+    print(
+        assistant.assistant_response(
+            "Care este cea mai buna reteta de tiramisu?"
+        )
+    )  # test irelevant
